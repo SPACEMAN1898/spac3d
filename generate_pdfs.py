@@ -8,6 +8,9 @@ uniform layout, auto-capitalisation of first name + FULL CAPS last name.
 import os
 from weasyprint import HTML
 
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_DIR = os.path.join(_SCRIPT_DIR, "output")
+
 FONT_DIR = os.path.expanduser("~/.local/share/fonts/poppins")
 
 # ── Brand colours ──────────────────────────────────────────────────────────
@@ -460,7 +463,8 @@ def footer_block(page_num: str = "") -> str:
 
 
 def to_pdf(html_str: str, filename: str) -> None:
-    out_path = f"/workspace/output/{filename}"
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    out_path = os.path.join(OUTPUT_DIR, filename)
     HTML(string=html_str).write_pdf(out_path)
     print(f"  ✓ {out_path}")
 
@@ -771,7 +775,12 @@ def gen_progress_report(week, rts_val, rts_desc, csi_val, csi_desc,
 
     def change_val(b, c):
         try:
-            return f"+{int(b) - int(c)}" if int(b) > int(c) else str(int(c) - int(b))
+            ib, ic = int(b), int(c)
+            if ib > ic:
+                return f"+{ib - ic}"
+            if ic > ib:
+                return f"-{ic - ib}"
+            return "0"
         except ValueError:
             return "Improved"
 
@@ -1017,4 +1026,4 @@ if __name__ == "__main__":
 
     gen_ows_back()
 
-    print("\nAll 8 PDFs generated in /workspace/output/")
+    print(f"\nAll 8 PDFs generated in {OUTPUT_DIR}/")
