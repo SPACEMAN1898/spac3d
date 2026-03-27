@@ -7,6 +7,8 @@ import userRoutes from './routes/user.routes.js';
 import orgRoutes from './routes/org.routes.js';
 import channelRoutes from './routes/channel.routes.js';
 import messageRoutes from './routes/message.routes.js';
+import fileRoutes from './routes/file.routes.js';
+import searchRoutes from './routes/search.routes.js';
 import { errorHandler } from './middleware/error.middleware.js';
 
 const app = express();
@@ -30,6 +32,8 @@ app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/orgs', orgRoutes);
 app.use('/api/v1', channelRoutes);
 app.use('/api/v1', messageRoutes);
+app.use('/api/v1', fileRoutes);
+app.use('/api/v1', searchRoutes);
 
 app.use(errorHandler);
 

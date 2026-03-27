@@ -3,8 +3,17 @@ import { useInfiniteQuery, useQueryClient } from '@tanstack/react-query';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import api from '../../lib/api';
 import { getSocket } from '../../lib/socket';
-import { SocketEvents, formatDate } from '@clinikchat/shared';
+import { SocketEvents } from '@clinikchat/shared';
 import MessageItem from './MessageItem';
+
+interface AttachmentData {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  url?: string;
+  thumbnailUrl?: string | null;
+}
 
 interface MessageData {
   id: string;
@@ -20,9 +29,10 @@ interface MessageData {
     id: string;
     displayName: string;
     avatarUrl: string | null;
-    status: string;
+    email?: string;
+    status?: string;
   };
-  attachments?: unknown[];
+  attachments?: AttachmentData[];
 }
 
 interface MessagesPage {
@@ -57,23 +67,26 @@ function buildListItems(messages: MessageData[]): ListItem[] {
       lastUserId = '';
     }
 
-    const timeDiff = items.length > 0 && lastUserId === msg.userId;
-    items.push({
-      type: 'message',
-      data: msg,
-      id: msg.id,
-      isGrouped: timeDiff,
-    });
+    const grouped = items.length > 0 && lastUserId === msg.userId;
+    items.push({ type: 'message', data: msg, id: msg.id, isGrouped: grouped });
     lastUserId = msg.userId;
   }
 
   return items;
 }
 
-export default function MessageList({ channelId }: { channelId: string }) {
+interface Props {
+  channelId: string;
+  onEditStart?: (messageId: string, content: string) => void;
+  onImageClick?: (url: string, index: number) => void;
+  onUserClick?: (user: NonNullable<MessageData['user']>, position: { x: number; y: number }) => void;
+}
+
+export default function MessageList({ channelId, onEditStart, onImageClick, onUserClick }: Props) {
   const queryClient = useQueryClient();
   const parentRef = useRef<HTMLDivElement>(null);
   const [autoScroll, setAutoScroll] = useState(true);
+  const [hasNewMessage, setHasNewMessage] = useState(false);
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteQuery<MessagesPage, Error, { pages: MessagesPage[]; pageParams: (string | undefined)[] }, string[], string | undefined>({
     queryKey: ['messages', channelId],
@@ -88,8 +101,7 @@ export default function MessageList({ channelId }: { channelId: string }) {
       return data.data as MessagesPage;
     },
     initialPageParam: undefined as string | undefined,
-    getNextPageParam: (lastPage) =>
-      lastPage.hasMore ? (lastPage.prevCursor ?? undefined) : undefined,
+    getNextPageParam: (lastPage) => lastPage.hasMore ? (lastPage.prevCursor ?? undefined) : undefined,
     enabled: !!channelId,
   });
 
@@ -99,7 +111,14 @@ export default function MessageList({ channelId }: { channelId: string }) {
   const virtualizer = useVirtualizer({
     count: items.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: (index) => (items[index].type === 'date-separator' ? 40 : items[index].isGrouped ? 28 : 56),
+    estimateSize: (index) => {
+      const item = items[index];
+      if (item.type === 'date-separator') return 40;
+      const msg = item.data as MessageData;
+      const hasAttachments = msg.attachments && msg.attachments.length > 0;
+      if (hasAttachments) return 220;
+      return item.isGrouped ? 28 : 56;
+    },
     overscan: 10,
   });
 
@@ -111,51 +130,47 @@ export default function MessageList({ channelId }: { channelId: string }) {
 
     function handleNewMessage(message: MessageData) {
       if (message.channelId !== channelId) return;
-      queryClient.setQueryData<QueryData>(
-        ['messages', channelId],
-        (old) => {
-          if (!old) return old;
-          const newPages = [...old.pages];
-          const lastPage = { ...newPages[0] };
-          lastPage.items = [...lastPage.items, message];
-          newPages[0] = lastPage;
-          return { ...old, pages: newPages };
-        },
-      );
+
+      queryClient.setQueryData<QueryData>(['messages', channelId], (old) => {
+        if (!old) return old;
+        const newPages = [...old.pages];
+        const firstPage = { ...newPages[0] };
+        firstPage.items = [...firstPage.items, message];
+        newPages[0] = firstPage;
+        return { ...old, pages: newPages };
+      });
+
+      if (!autoScroll) {
+        setHasNewMessage(true);
+      }
     }
 
     function handleEditMessage(message: MessageData) {
       if (message.channelId !== channelId) return;
-      queryClient.setQueryData<QueryData>(
-        ['messages', channelId],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              ...page,
-              items: page.items.map((m) => (m.id === message.id ? message : m)),
-            })),
-          };
-        },
-      );
+      queryClient.setQueryData<QueryData>(['messages', channelId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            items: page.items.map((m) => (m.id === message.id ? message : m)),
+          })),
+        };
+      });
     }
 
     function handleDeleteMessage(evtData: { messageId: string; channelId: string }) {
       if (evtData.channelId !== channelId) return;
-      queryClient.setQueryData<QueryData>(
-        ['messages', channelId],
-        (old) => {
-          if (!old) return old;
-          return {
-            ...old,
-            pages: old.pages.map((page) => ({
-              ...page,
-              items: page.items.filter((m) => m.id !== evtData.messageId),
-            })),
-          };
-        },
-      );
+      queryClient.setQueryData<QueryData>(['messages', channelId], (old) => {
+        if (!old) return old;
+        return {
+          ...old,
+          pages: old.pages.map((page) => ({
+            ...page,
+            items: page.items.filter((m) => m.id !== evtData.messageId),
+          })),
+        };
+      });
     }
 
     socket.on(SocketEvents.MESSAGE_NEW, handleNewMessage);
@@ -167,7 +182,7 @@ export default function MessageList({ channelId }: { channelId: string }) {
       socket.off(SocketEvents.MESSAGE_EDIT, handleEditMessage);
       socket.off(SocketEvents.MESSAGE_DELETE, handleDeleteMessage);
     };
-  }, [channelId, queryClient]);
+  }, [channelId, queryClient, autoScroll]);
 
   useEffect(() => {
     if (autoScroll && items.length > 0) {
@@ -180,23 +195,32 @@ export default function MessageList({ channelId }: { channelId: string }) {
     if (!el) return;
 
     const distanceFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
-    setAutoScroll(distanceFromBottom < 100);
+    const isAtBottom = distanceFromBottom < 100;
+    setAutoScroll(isAtBottom);
+    if (isAtBottom) setHasNewMessage(false);
 
     if (el.scrollTop < 200 && hasNextPage && !isFetchingNextPage) {
       fetchNextPage();
     }
   }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
+  function scrollToBottom() {
+    virtualizer.scrollToIndex(items.length - 1, { align: 'end' });
+    setAutoScroll(true);
+    setHasNewMessage(false);
+  }
+
   return (
     <div ref={parentRef} onScroll={handleScroll} className="relative flex-1 overflow-y-auto">
-      {!autoScroll && items.length > 0 && (
+      {hasNewMessage && (
         <button
-          onClick={() => {
-            virtualizer.scrollToIndex(items.length - 1, { align: 'end' });
-            setAutoScroll(true);
-          }}
-          className="fixed bottom-24 right-8 z-10 rounded-full bg-primary px-4 py-2 text-sm text-white shadow-lg hover:bg-primary-hover"
+          onClick={scrollToBottom}
+          className="sticky top-0 z-10 mx-auto mt-2 flex items-center gap-1 rounded-full bg-primary px-4 py-1.5 text-sm text-white shadow-lg hover:bg-primary-hover"
+          style={{ display: 'block', left: '50%', transform: 'translateX(-50%)' }}
         >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+          </svg>
           New messages
         </button>
       )}
@@ -230,24 +254,34 @@ export default function MessageList({ channelId }: { channelId: string }) {
           return (
             <div
               key={item.id}
+              data-message-id={msg.id}
               style={{
                 position: 'absolute',
                 top: 0,
                 left: 0,
                 width: '100%',
-                height: virtualItem.size,
                 transform: `translateY(${virtualItem.start}px)`,
               }}
             >
-              <MessageItem message={msg} isGrouped={item.isGrouped || false} />
+              <MessageItem
+                message={msg}
+                isGrouped={item.isGrouped || false}
+                onEditStart={onEditStart}
+                onImageClick={onImageClick}
+                onUserClick={onUserClick}
+              />
             </div>
           );
         })}
       </div>
 
       {allMessages.length === 0 && (
-        <div className="flex h-full items-center justify-center text-gray-400">
-          No messages yet. Start the conversation!
+        <div className="flex h-full flex-col items-center justify-center text-gray-400">
+          <svg className="mb-3 h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+          </svg>
+          <p className="text-lg font-medium">No messages yet</p>
+          <p className="mt-1 text-sm">Start the conversation!</p>
         </div>
       )}
     </div>

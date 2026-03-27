@@ -9,6 +9,8 @@ export const ApiRoutes = {
   AUTH_LOGOUT: `${BASE}/auth/logout`,
 
   USER_ME: `${BASE}/users/me`,
+  USER_AVATAR: `${BASE}/users/me/avatar`,
+  USER_PASSWORD: `${BASE}/users/me/password`,
 
   ORGS: `${BASE}/orgs`,
   ORG_BY_ID: (orgId: string) => `${BASE}/orgs/${orgId}`,
@@ -25,4 +27,9 @@ export const ApiRoutes = {
   CHANNEL_MESSAGES: (channelId: string) => `${BASE}/channels/${channelId}/messages`,
   MESSAGE_BY_ID: (messageId: string) => `${BASE}/messages/${messageId}`,
   CHANNEL_READ: (channelId: string) => `${BASE}/channels/${channelId}/read`,
+
+  CHANNEL_UPLOAD: (channelId: string) => `${BASE}/channels/${channelId}/upload`,
+  ATTACHMENT_URL: (attachmentId: string) => `${BASE}/attachments/${attachmentId}/url`,
+
+  CHANNEL_SEARCH: (channelId: string) => `${BASE}/channels/${channelId}/search`,
 } as const;

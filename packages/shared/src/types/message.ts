@@ -10,7 +10,7 @@ export interface Attachment {
   size: number;
   storageKey: string;
   url?: string;
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
   createdAt: string;
 }
 
@@ -26,4 +26,16 @@ export interface Message {
   updatedAt: string;
   user?: UserProfile;
   attachments?: Attachment[];
+}
+
+export interface SearchResult {
+  id: string;
+  content: string;
+  createdAt: string;
+  userId: string;
+  user: {
+    id: string;
+    displayName: string;
+    avatarUrl: string | null;
+  };
 }

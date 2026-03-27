@@ -1,5 +1,16 @@
 import { io, type Socket } from 'socket.io-client';
 import { useAuthStore } from '../stores/authStore';
+import { create } from 'zustand';
+
+interface SocketState {
+  status: 'connected' | 'reconnecting' | 'disconnected';
+  setStatus: (s: SocketState['status']) => void;
+}
+
+export const useSocketStore = create<SocketState>((set) => ({
+  status: 'disconnected',
+  setStatus: (status) => set({ status }),
+}));
 
 let socket: Socket | null = null;
 
@@ -16,16 +27,25 @@ export function connectSocket(): Socket {
     auth: { token },
     transports: ['websocket', 'polling'],
     reconnection: true,
-    reconnectionAttempts: 10,
+    reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
   });
 
   socket.on('connect', () => {
-    console.log('Socket.IO connected');
+    useSocketStore.getState().setStatus('connected');
   });
 
-  socket.on('disconnect', (reason) => {
-    console.log('Socket.IO disconnected:', reason);
+  socket.on('disconnect', () => {
+    useSocketStore.getState().setStatus('disconnected');
+  });
+
+  socket.io.on('reconnect_attempt', () => {
+    useSocketStore.getState().setStatus('reconnecting');
+  });
+
+  socket.io.on('reconnect', () => {
+    useSocketStore.getState().setStatus('connected');
   });
 
   return socket;
@@ -35,5 +55,6 @@ export function disconnectSocket(): void {
   if (socket) {
     socket.disconnect();
     socket = null;
+    useSocketStore.getState().setStatus('disconnected');
   }
 }

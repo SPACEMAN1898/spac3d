@@ -3,6 +3,7 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import AppLayout from './components/layout/AppLayout';
 import ChannelView from './pages/ChannelView';
+import SettingsPage from './pages/SettingsPage';
 import { useAuthStore } from './stores/authStore';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -44,6 +45,7 @@ export default function App() {
           </ProtectedRoute>
         }
       >
+        <Route path="settings" element={<SettingsPage />} />
         <Route path=":orgSlug/:channelId" element={<ChannelView />} />
         <Route index element={<WelcomeScreen />} />
       </Route>
