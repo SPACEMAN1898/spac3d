@@ -1,0 +1,11 @@
+{
+  "name": "@clinikchat/mobile",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo \"Mobile app scaffold pending in later phase\"",
+    "build": "echo \"Mobile build pending in later phase\"",
+    "lint": "echo \"Mobile lint pending in later phase\"",
+    "typecheck": "echo \"Mobile typecheck pending in later phase\""
+  }
+}
