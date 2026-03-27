@@ -1,0 +1,40 @@
+node_modules/
+dist/
+build/
+.env
+.env.local
+.env.production
+
+# Prisma
+packages/api/prisma/*.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Expo / React Native
+.expo/
+android/build/
+ios/Pods/
+*.jks
+*.keystore
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Test
+coverage/
+
+# MinIO data
+docker/minio-data/
+
+# Generated
+packages/api/src/generated/
