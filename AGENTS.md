@@ -1,8 +1,20 @@
 ## Cursor Cloud specific instructions
 
-This repository is currently empty (initialized with only a `.gitkeep` placeholder). There are no services, dependencies, or build steps at this time.
+### Install
+- Run `pnpm install` from the repository root.
+- Generate the Prisma client with `pnpm --filter @clinikchat/api prisma:generate`.
 
-Once application code is added, update this section with:
-- How to install dependencies
-- How to run, build, lint, and test the application
-- Any non-obvious development environment caveats
+### Run
+- Start local infrastructure with `pnpm docker:dev`.
+- Run the API with `pnpm --filter @clinikchat/api dev`.
+- Run the web client with `pnpm --filter @clinikchat/web dev`.
+
+### Build, lint, and test
+- Build all packages with `pnpm build`.
+- Lint all packages with `pnpm lint`.
+- Typecheck all packages with `pnpm typecheck`.
+
+### Caveats
+- The repo-level `.cursorrules` file is currently absent, so follow direct user instructions plus this file.
+- `packages/mobile` is scaffolded only in Phase 0 and does not yet contain an Expo app.
+- Docker services use `docker/.env.example` as the default env file for local development.
