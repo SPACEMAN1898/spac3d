@@ -12,6 +12,9 @@ export const SocketEvents = {
   CHANNEL_LEAVE: 'channel:leave',
   CHANNEL_UPDATE: 'channel:update',
 
+  REACTION_ADD: 'reaction:add',
+  REACTION_REMOVE: 'reaction:remove',
+
   USER_STATUS: 'user:status',
 
   ERROR: 'error',

@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { formatDate } from '@clinikchat/shared';
+import { formatDate, SocketEvents } from '@clinikchat/shared';
 import { useAuthStore } from '../../stores/authStore';
 import { getSocket } from '../../lib/socket';
-import { SocketEvents } from '@clinikchat/shared';
 import AttachmentView from '../file/AttachmentView';
 import ContextMenu from '../ui/ContextMenu';
+import ReactionBar from './ReactionBar';
 
 interface AttachmentData {
   id: string;
@@ -13,6 +13,12 @@ interface AttachmentData {
   size: number;
   url?: string;
   thumbnailUrl?: string | null;
+}
+
+interface ReactionGroup {
+  emoji: string;
+  count: number;
+  userIds: string[];
 }
 
 interface MessageData {
@@ -30,6 +36,7 @@ interface MessageData {
     status?: string;
   };
   attachments?: AttachmentData[];
+  reactions?: ReactionGroup[];
 }
 
 interface Props {
@@ -38,9 +45,10 @@ interface Props {
   onEditStart?: (messageId: string, content: string) => void;
   onImageClick?: (url: string, index: number) => void;
   onUserClick?: (user: NonNullable<MessageData['user']>, position: { x: number; y: number }) => void;
+  onReactionUpdate?: () => void;
 }
 
-export default function MessageItem({ message, isGrouped, onEditStart, onImageClick, onUserClick }: Props) {
+export default function MessageItem({ message, isGrouped, onEditStart, onImageClick, onUserClick, onReactionUpdate }: Props) {
   const currentUserId = useAuthStore((s) => s.user?.id);
   const isOwn = message.user?.id === currentUserId;
   const displayName = message.user?.displayName || 'Unknown';
@@ -81,6 +89,9 @@ export default function MessageItem({ message, isGrouped, onEditStart, onImageCl
             <p className="text-sm text-gray-800 break-words whitespace-pre-wrap">{message.content}</p>
             {attachments.length > 0 && (
               <AttachmentView attachments={attachments} onImageClick={onImageClick || (() => {})} />
+            )}
+            {(message.reactions?.length ?? 0) > 0 && (
+              <ReactionBar messageId={message.id} reactions={message.reactions!} onUpdate={onReactionUpdate || (() => {})} />
             )}
           </div>
           {isOwn && (
@@ -138,6 +149,9 @@ export default function MessageItem({ message, isGrouped, onEditStart, onImageCl
           <p className="text-sm text-gray-800 break-words whitespace-pre-wrap">{message.content}</p>
           {attachments.length > 0 && (
             <AttachmentView attachments={attachments} onImageClick={onImageClick || (() => {})} />
+          )}
+          {(message.reactions?.length ?? 0) > 0 && (
+            <ReactionBar messageId={message.id} reactions={message.reactions!} onUpdate={onReactionUpdate || (() => {})} />
           )}
         </div>
         {isOwn && (

@@ -135,6 +135,7 @@ model Message {
   parent      Message?     @relation("MessageThread", fields: [parentId], references: [id])
   replies     Message[]    @relation("MessageThread")
   attachments Attachment[]
+  reactions   Reaction[]
 
   @@index([channelId, createdAt(sort: Desc)])
   @@map("messages")
@@ -152,6 +153,29 @@ model Attachment {
   message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
 
   @@map("attachments")
+}
+
+model Reaction {
+  id        String   @id @default(uuid()) @db.Uuid
+  messageId String   @db.Uuid
+  userId    String   @db.Uuid
+  emoji     String
+  createdAt DateTime @default(now())
+
+  message Message @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@unique([messageId, userId, emoji])
+  @@map("reactions")
+}
+
+model PushToken {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  token     String   @unique
+  platform  String   @default("expo")
+  createdAt DateTime @default(now())
+
+  @@map("push_tokens")
 }
 
 model RefreshToken {

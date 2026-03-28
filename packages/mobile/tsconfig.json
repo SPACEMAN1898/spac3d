@@ -1,10 +1,12 @@
 {
-  "extends": "../../tsconfig.base.json",
+  "extends": "expo/tsconfig.base",
   "compilerOptions": {
-    "outDir": "./dist",
-    "rootDir": "./src",
-    "jsx": "react-native",
-    "lib": ["ES2022"]
+    "strict": true,
+    "paths": {
+      "@/*": ["./*"],
+      "@clinikchat/shared": ["../shared/dist"],
+      "@clinikchat/shared/*": ["../shared/dist/*"]
+    }
   },
-  "include": ["src"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
 }

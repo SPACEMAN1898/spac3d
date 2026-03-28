@@ -14,6 +14,12 @@ export interface Attachment {
   createdAt: string;
 }
 
+export interface ReactionGroup {
+  emoji: string;
+  count: number;
+  userIds: string[];
+}
+
 export interface Message {
   id: string;
   channelId: string;
@@ -26,6 +32,7 @@ export interface Message {
   updatedAt: string;
   user?: UserProfile;
   attachments?: Attachment[];
+  reactions?: ReactionGroup[];
 }
 
 export interface SearchResult {

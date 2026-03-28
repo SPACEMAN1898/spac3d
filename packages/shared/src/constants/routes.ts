@@ -32,4 +32,10 @@ export const ApiRoutes = {
   ATTACHMENT_URL: (attachmentId: string) => `${BASE}/attachments/${attachmentId}/url`,
 
   CHANNEL_SEARCH: (channelId: string) => `${BASE}/channels/${channelId}/search`,
+
+  MESSAGE_REACTIONS: (messageId: string) => `${BASE}/messages/${messageId}/reactions`,
+  MESSAGE_REACTION: (messageId: string, emoji: string) =>
+    `${BASE}/messages/${messageId}/reactions/${encodeURIComponent(emoji)}`,
+
+  USER_PUSH_TOKEN: `${BASE}/users/me/push-token`,
 } as const;

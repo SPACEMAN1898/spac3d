@@ -6,6 +6,7 @@ import path from 'node:path';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import * as userService from '../services/user.service.js';
 import { uploadFile, getPresignedUrl } from '../lib/storage.js';
+import { prisma } from '../lib/prisma.js';
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -64,6 +65,26 @@ router.post('/me/password', async (req: Request, res: Response, next: NextFuncti
     const { currentPassword, newPassword } = req.body;
     await userService.changePassword(req.userId!, currentPassword, newPassword);
     res.json({ success: true, data: { message: 'Password changed' } });
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/me/push-token', async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { token, platform } = req.body;
+    if (!token) {
+      res.status(400).json({ success: false, error: { code: 'MISSING_TOKEN', message: 'Push token required' } });
+      return;
+    }
+
+    await prisma.pushToken.upsert({
+      where: { token },
+      create: { userId: req.userId!, token, platform: platform || 'expo' },
+      update: { userId: req.userId! },
+    });
+
+    res.json({ success: true, data: { message: 'Push token registered' } });
   } catch (err) {
     next(err);
   }
